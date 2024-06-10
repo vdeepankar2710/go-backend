@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"todo-backend/dtos"
 	"todo-backend/services"
 
@@ -17,7 +18,7 @@ func CreateTodoHandler(service *services.TodoService) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		todo, err := service.Create(dto.Title)
+		todo, err := service.CreateService(dto)
 		if err!=nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -27,7 +28,23 @@ func CreateTodoHandler(service *services.TodoService) http.HandlerFunc {
 
 func GetAllTodosHandler(service *services.TodoService) http.HandlerFunc{
 	return func (w http.ResponseWriter, r *http.Request)  {
-		todos, err := service.GetAllTodos()
+		vars :=mux.Vars(r)
+		pageNumberStr := vars["page_no"]
+    	entriesPerPageStr := vars["entries_per_page"]
+
+		pageNumber, err := strconv.Atoi(pageNumberStr)
+		if err != nil {
+			http.Error(w, "Invalid page number", http.StatusBadRequest)
+			return
+		}
+
+		entriesPerPage, err := strconv.Atoi(entriesPerPageStr)
+		if err != nil {
+			http.Error(w, "Invalid entries per page", http.StatusBadRequest)
+			return
+		}
+
+		todos, err := service.GetAllTodosService(pageNumber, entriesPerPage)
 		if err != nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -44,7 +61,7 @@ func GetTodoByIdhandler(service *services.TodoService) http.HandlerFunc{
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		todo, err := service.GetTodoByID(id)
+		todo, err := service.GetTodoByIDService(id)
 
 		if err!=nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -73,12 +90,17 @@ func UpdateTodoHandler(service *services.TodoService) http.HandlerFunc {
             title = &dto.Title
         }
 
-        var completed *string
+        var status *string
         if dto.Status != "" {
-            completed = &dto.Status
+            status = &dto.Status
+        }
+		
+		var description *string
+        if dto.Description != "" {
+            description = &dto.Description
         }
 
-        todo, err := service.UpdateTodo(id, title, completed)
+        todo, err := service.UpdateTodoService(id, title, description, status)
 
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -96,10 +118,30 @@ func DeleteTodoHandler(service *services.TodoService) http.HandlerFunc {
             http.Error(w, err.Error(), http.StatusBadRequest)
             return
         }
-        if err := service.DeleteTodo(id); err != nil {
+        if err := service.DeleteTodoService(id); err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
         w.WriteHeader(http.StatusNoContent)
     }
+}
+
+func GetTodosByUserIDHandler(service *services.TodoService) http.HandlerFunc{
+	return func (w http.ResponseWriter, r *http.Request)  {
+		vars :=mux.Vars(r)
+		userIdStr:= vars["user_id"]
+
+		userId, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			http.Error(w, "Invalid userId format, userId shoud be an integer", http.StatusBadRequest)
+			return
+		}
+
+		todos, err := service.GetTodosByUserIDService(userId)
+		if err != nil{
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(todos)
+	}
 }

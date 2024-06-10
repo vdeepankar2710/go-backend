@@ -1,6 +1,8 @@
 package services
 
 import (
+	"time"
+	"todo-backend/dtos"
 	"todo-backend/models"
 	"todo-backend/repositories"
 
@@ -15,37 +17,40 @@ func NewTodoService(repository *repositories.TodoRepository) *TodoService {
 	return &TodoService{repository: repository}
 }
 
-func (s *TodoService) Create(title string) (*models.Todo, error){
-	todo := &models.Todo{
-		ID:gocql.TimeUUID(),
-		Title: title,
-		Status: "Not Competed",
+func (s *TodoService) CreateService (dto dtos.CreateTodoDTO) (*models.Todo, error){
+	todo := &models.Todo {
+		ID:          gocql.TimeUUID(),
+		UserID:      dto.UserID,
+		Title:       dto.Title,
+		Description: dto.Description,
+		Status:      dto.Status,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
-	if err:= s.repository.Create(todo); err!=nil{
+	if err:= s.repository.CreateRepo(todo); err!=nil{
 		return nil, err
 	}
 	return todo, nil
 }
 
-func (s *TodoService) GetAllTodos () ([]models.Todo, error){
-	todos, err := s.repository.GetAll()
+func (s *TodoService) GetAllTodosService (pageNumber int, entriesPerPage int) ([]models.Todo, error){
+	todos, err := s.repository.GetAllRepo(pageNumber, entriesPerPage)
 	if err != nil{
 		return nil, err
 	}
-
 	return todos, nil
 }
 
-func (s *TodoService) GetTodoByID (id gocql.UUID) (*models.Todo, error){
-	todo, err := s.repository.GetTodoByID(id)
+func (s *TodoService) GetTodoByIDService (id gocql.UUID) (*models.Todo, error){
+	todo, err := s.repository.GetTodoByIDRepo(id)
 	if err != nil{
 		return nil, err
 	}
 	return todo, nil
 }
 
-func (s *TodoService) UpdateTodo (id gocql.UUID, title *string, status *string) (*models.Todo, error){
-	todo, err := s.repository.GetTodoByID(id)
+func (s *TodoService) UpdateTodoService (id gocql.UUID, title *string, description *string, status *string) (*models.Todo, error){
+	todo, err := s.repository.GetTodoByIDRepo(id)
 	if err!=nil{
 		return nil, err
 	}
@@ -56,15 +61,32 @@ func (s *TodoService) UpdateTodo (id gocql.UUID, title *string, status *string) 
     if status != nil {
         todo.Status = *status
     }
-	if err:= s.repository.UpdateTodo(todo); err!=nil{
+
+	if description!=nil{
+		todo.Description = *description
+	}
+
+	todo.UpdatedAt = time.Now()
+
+	if err:= s.repository.UpdateTodoRepo(todo); err!=nil{
 		return nil, err
 	}
 	return todo, nil
 }
 
-func (s *TodoService) DeleteTodo (id gocql.UUID) error{
-	if err := s.repository.DeleteTodo(id); err!=nil{
+func (s *TodoService) DeleteTodoService (id gocql.UUID) error{
+	if err := s.repository.DeleteTodoRepo(id); err!=nil{
 		return err
 	}
 	return nil
+}
+
+
+func (s *TodoService) GetTodosByUserIDService (userId int) ([]models.Todo, error){
+	todos, err := s.repository.GetTodoByUserIdRepo(userId)
+	if err!=nil{
+		return nil, err
+	}
+	return todos, err
+	
 }
