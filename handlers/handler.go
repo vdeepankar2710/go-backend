@@ -31,6 +31,7 @@ func GetAllTodosHandler(service *services.TodoService) http.HandlerFunc{
 		vars :=mux.Vars(r)
 		pageNumberStr := vars["page_no"]
     	entriesPerPageStr := vars["entries_per_page"]
+		sort := vars["sort"]
 
 		pageNumber, err := strconv.Atoi(pageNumberStr)
 		if err != nil {
@@ -43,8 +44,11 @@ func GetAllTodosHandler(service *services.TodoService) http.HandlerFunc{
 			http.Error(w, "Invalid entries per page", http.StatusBadRequest)
 			return
 		}
+		if sort != "ASC" && sort != "DESC"{
+			http.Error(w, "Invalid sorting type", http.StatusBadRequest)
+		}
 
-		todos, err := service.GetAllTodosService(pageNumber, entriesPerPage)
+		todos, err := service.GetAllTodosService(pageNumber, entriesPerPage, sort)
 		if err != nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

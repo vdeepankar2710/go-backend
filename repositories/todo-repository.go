@@ -20,7 +20,7 @@ func (r *TodoRepository) CreateRepo(todo *models.Todo) error{
 							todo.ID, todo.UserID, todo.Title, todo.Description, todo.Status, todo.CreatedAt, todo.UpdatedAt).Exec()
 }
 
-func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int) ([]models.Todo, error){
+func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int, sort string) ([]models.Todo, error){
 	var todosArr []models.Todo
 	var count int
 
@@ -35,7 +35,7 @@ func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int) ([]model
 		return nil, errors.ErrInvalidOffset
 	}
 
-	iter:= r.session.Query("SELECT * FROM todos LIMIT %d OFFSET %d", entriesPerPage, offset).Iter()
+	iter:= r.session.Query("SELECT * FROM todos LIMIT %d OFFSET %d ORDER BY created_at ?", entriesPerPage, offset, sort).Iter()
 	var todo models.Todo
 	for iter.Scan(
 		&todo.ID,

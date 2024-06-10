@@ -14,7 +14,7 @@ func RegisterTodoRoutes(router *mux.Router, session *gocql.Session) {
     service := services.NewTodoService(repo)
 
     router.HandleFunc("/todos/create", handlers.CreateTodoHandler(service)).Methods("POST")
-    router.HandleFunc("/todos/get/{page_no}/{entries_per_page}", handlers.GetAllTodosHandler(service)).Methods("GET")
+    router.HandleFunc("/todos/get/{page_no}/{entries_per_page}/{sort}", handlers.GetAllTodosHandler(service)).Methods("GET")
     router.HandleFunc("/todos/get/{id}", handlers.GetTodoByIdhandler(service)).Methods("GET")
     router.HandleFunc("/todos/{id}", handlers.UpdateTodoHandler(service)).Methods("PUT")
     router.HandleFunc("/todos/{id}", handlers.DeleteTodoHandler(service)).Methods("DELETE")

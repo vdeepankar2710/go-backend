@@ -33,8 +33,8 @@ func (s *TodoService) CreateService (dto dtos.CreateTodoDTO) (*models.Todo, erro
 	return todo, nil
 }
 
-func (s *TodoService) GetAllTodosService (pageNumber int, entriesPerPage int) ([]models.Todo, error){
-	todos, err := s.repository.GetAllRepo(pageNumber, entriesPerPage)
+func (s *TodoService) GetAllTodosService (pageNumber int, entriesPerPage int, sort string) ([]models.Todo, error){
+	todos, err := s.repository.GetAllRepo(pageNumber, entriesPerPage, sort)
 	if err != nil{
 		return nil, err
 	}
