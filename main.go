@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"todo-backend/config"
 	"todo-backend/routes"
@@ -10,16 +11,16 @@ import (
 )
 
 func main(){
-	
-	session, err := config.NewSession()
-	if err!=nil{
-		fmt.Printf("Failed to connect to DB %v", err)
-	}
-	defer session.Close()
+
+	MONGO_URI := "mongodb://localhost:27017"
+	db, err := config.ConnectDB(MONGO_URI)
+    if err != nil {
+        log.Fatalf("Could not connect to the database: %v", err)
+    }
 
 	router := mux.NewRouter()
 
-    routes.RegisterTodoRoutes(router, session)
+    routes.RegisterTodoRoutes(router, db)
 
     http.ListenAndServe(":8080", router)
 	

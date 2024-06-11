@@ -1,93 +1,109 @@
 package repositories
 
 import (
-	"todo-backend/errors"
+	"context"
+	"time"
 	"todo-backend/models"
 
-	"github.com/gocql/gocql"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type TodoRepository struct{
-	session *gocql.Session
+type TodoRepository struct {
+	collection *mongo.Collection
 }
 
-func NewTodoRepository(session *gocql.Session) *TodoRepository {
-	return &TodoRepository{session: session}
+func NewTodoRepository(db *mongo.Database) *TodoRepository {
+	return &TodoRepository{
+		collection: db.Collection("todos"),
+	}
 }
 
-func (r *TodoRepository) CreateRepo(todo *models.Todo) error{
-	return r.session.Query("INSERT INTO todos (id, user_id, title, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-							todo.ID, todo.UserID, todo.Title, todo.Description, todo.Status, todo.CreatedAt, todo.UpdatedAt).Exec()
+func (r *TodoRepository) CreateRepo(todo *models.Todo) error {
+	_, err := r.collection.InsertOne(context.TODO(), todo)
+	return err
 }
 
-func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int, sort string) ([]models.Todo, error){
+func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int, sort string) ([]models.Todo, error) {
 	var todosArr []models.Todo
-	var count int
 
 	offset := (pageNumber - 1) * entriesPerPage
 
-    err := r.session.Query("SELECT COUNT(*) FROM todos").Scan(&count)
-    if err != nil {
-        return nil, err
-    }
+	options := options.Find()
+	options.SetSkip(int64(offset))
+	options.SetLimit(int64(entriesPerPage))
+	options.SetSort(bson.D{{Key: "created_at", Value: sort}})
 
-	if offset > count{
-		return nil, errors.ErrInvalidOffset
+	cursor, err := r.collection.Find(context.TODO(), bson.D{}, options)
+	if err != nil {
+		return nil, err
 	}
+	defer cursor.Close(context.TODO())
 
-	iter:= r.session.Query("SELECT * FROM todos LIMIT %d OFFSET %d ORDER BY created_at ?", entriesPerPage, offset, sort).Iter()
-	var todo models.Todo
-	for iter.Scan(
-		&todo.ID,
-        &todo.UserID,
-        &todo.Title,
-        &todo.Description,
-        &todo.Status,
-        &todo.CreatedAt,
-        &todo.UpdatedAt){
+	for cursor.Next(context.TODO()) {
+		var todo models.Todo
+		if err := cursor.Decode(&todo); err != nil {
+			return nil, err
+		}
 		todosArr = append(todosArr, todo)
 	}
 
-	if err := iter.Close(); err!=nil{
+	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
 	return todosArr, nil
 }
 
-func (r *TodoRepository) GetTodoByIDRepo(id gocql.UUID) (*models.Todo, error) {
+func (r *TodoRepository) GetTodoByIDRepo(id primitive.ObjectID) (*models.Todo, error) {
 	var todo models.Todo
 
-	if err := r.session.Query("SELECT id, title, status FROM todos where id = ?", id).Scan(&todo.ID, &todo.Title, &todo.Status); err!=nil{
+	err := r.collection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&todo)
+	if err != nil {
 		return nil, err
 	}
 	return &todo, nil
 }
 
 func (r *TodoRepository) UpdateTodoRepo(todo *models.Todo) error {
-	return r.session.Query("UPDATE todos SET title = ?, status = ? WHERE id = ?", todo.Title, todo.Status, todo.ID).Exec()
+	filter := bson.M{"_id": todo.ID}
+	update := bson.M{
+		"$set": bson.M{
+			"title":       todo.Title,
+			"description": todo.Description,
+			"status":      todo.Status,
+			"updated_at":  time.Now(),
+		},
+	}
+
+	_, err := r.collection.UpdateOne(context.TODO(), filter, update)
+	return err
 }
 
-func (r *TodoRepository) DeleteTodoRepo(id gocql.UUID) error {
-	return r.session.Query("DELETE FROM todos WHERE id = ?", id).Exec()
+func (r *TodoRepository) DeleteTodoRepo(id primitive.ObjectID) error {
+	_, err := r.collection.DeleteOne(context.TODO(), bson.M{"_id": id})
+	return err
 }
 
-func (r *TodoRepository) GetTodoByUserIdRepo(userId int) ([]models.Todo, error){
+func (r *TodoRepository) GetTodoByUserIdRepo(userId int) ([]models.Todo, error) {
 	var todosArr []models.Todo
 
-	iter:= r.session.Query("SELECT * FROM todos WHERE user_id = ?", userId).Iter()
-	var todo models.Todo
-	for iter.Scan(
-		&todo.ID,
-        &todo.UserID,
-        &todo.Title,
-        &todo.Description,
-        &todo.Status,
-        &todo.CreatedAt,
-        &todo.UpdatedAt){
+	cursor, err := r.collection.Find(context.TODO(), bson.M{"user_id": userId})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var todo models.Todo
+		if err := cursor.Decode(&todo); err != nil {
+			return nil, err
+		}
 		todosArr = append(todosArr, todo)
 	}
 
-	if err := iter.Close(); err!=nil{
+	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
 	return todosArr, nil

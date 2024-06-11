@@ -5,12 +5,12 @@ import (
 	"todo-backend/repositories"
 	"todo-backend/services"
 
-	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func RegisterTodoRoutes(router *mux.Router, session *gocql.Session) {
-    repo := repositories.NewTodoRepository(session)
+func RegisterTodoRoutes(router *mux.Router, db *mongo.Database) {
+    repo := repositories.NewTodoRepository(db)
     service := services.NewTodoService(repo)
 
     router.HandleFunc("/todos/create", handlers.CreateTodoHandler(service)).Methods("POST")

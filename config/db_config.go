@@ -1,11 +1,24 @@
 package config
 
-import "github.com/gocql/gocql"
+import (
+	"context"
 
-func NewSession() (*gocql.Session, error){
-	cluster := gocql.NewCluster("localhost")
-	cluster.Keyspace = "todoapp"
-	cluster.Consistency = gocql.Quorum
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
 
-	return cluster.CreateSession()
+func ConnectDB(uri string) (*mongo.Database, error){
+	
+	clientOptions := options.Client().ApplyURI(uri)
+    client, err := mongo.Connect(context.TODO(), clientOptions)
+    if err != nil {
+        return nil, err
+    }
+    
+    err = client.Ping(context.TODO(), nil)
+    if err != nil {
+        return nil, err
+    }
+    
+    return client.Database("todoapp"), nil
 }

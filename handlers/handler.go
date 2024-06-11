@@ -7,8 +7,8 @@ import (
 	"todo-backend/dtos"
 	"todo-backend/services"
 
-	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func CreateTodoHandler(service *services.TodoService) http.HandlerFunc {
@@ -60,7 +60,8 @@ func GetAllTodosHandler(service *services.TodoService) http.HandlerFunc{
 func GetTodoByIdhandler(service *services.TodoService) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
 		vars :=mux.Vars(r)
-		id, err := gocql.ParseUUID(vars["id"])
+		idHex := vars["id"]
+		id, err := primitive.ObjectIDFromHex(idHex)
 		if err!=nil{
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -78,7 +79,8 @@ func GetTodoByIdhandler(service *services.TodoService) http.HandlerFunc{
 func UpdateTodoHandler(service *services.TodoService) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         vars := mux.Vars(r)
-        id, err := gocql.ParseUUID(vars["id"])
+        idHex := vars["id"]
+		id, err := primitive.ObjectIDFromHex(idHex)
         if err != nil {
             http.Error(w, err.Error(), http.StatusBadRequest)
             return
@@ -117,7 +119,8 @@ func UpdateTodoHandler(service *services.TodoService) http.HandlerFunc {
 func DeleteTodoHandler(service *services.TodoService) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         vars := mux.Vars(r)
-        id, err := gocql.ParseUUID(vars["id"])
+        idHex := vars["id"]
+		id, err := primitive.ObjectIDFromHex(idHex)
         if err != nil {
             http.Error(w, err.Error(), http.StatusBadRequest)
             return

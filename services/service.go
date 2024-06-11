@@ -6,7 +6,7 @@ import (
 	"todo-backend/models"
 	"todo-backend/repositories"
 
-	"github.com/gocql/gocql"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TodoService struct {
@@ -19,7 +19,7 @@ func NewTodoService(repository *repositories.TodoRepository) *TodoService {
 
 func (s *TodoService) CreateService (dto dtos.CreateTodoDTO) (*models.Todo, error){
 	todo := &models.Todo {
-		ID:          gocql.TimeUUID(),
+		ID:          primitive.NewObjectID(),
 		UserID:      dto.UserID,
 		Title:       dto.Title,
 		Description: dto.Description,
@@ -41,7 +41,7 @@ func (s *TodoService) GetAllTodosService (pageNumber int, entriesPerPage int, so
 	return todos, nil
 }
 
-func (s *TodoService) GetTodoByIDService (id gocql.UUID) (*models.Todo, error){
+func (s *TodoService) GetTodoByIDService (id primitive.ObjectID) (*models.Todo, error){
 	todo, err := s.repository.GetTodoByIDRepo(id)
 	if err != nil{
 		return nil, err
@@ -49,7 +49,7 @@ func (s *TodoService) GetTodoByIDService (id gocql.UUID) (*models.Todo, error){
 	return todo, nil
 }
 
-func (s *TodoService) UpdateTodoService (id gocql.UUID, title *string, description *string, status *string) (*models.Todo, error){
+func (s *TodoService) UpdateTodoService (id primitive.ObjectID, title *string, description *string, status *string) (*models.Todo, error){
 	todo, err := s.repository.GetTodoByIDRepo(id)
 	if err!=nil{
 		return nil, err
@@ -74,7 +74,7 @@ func (s *TodoService) UpdateTodoService (id gocql.UUID, title *string, descripti
 	return todo, nil
 }
 
-func (s *TodoService) DeleteTodoService (id gocql.UUID) error{
+func (s *TodoService) DeleteTodoService (id primitive.ObjectID) error{
 	if err := s.repository.DeleteTodoRepo(id); err!=nil{
 		return err
 	}
