@@ -22,6 +22,7 @@ func main(){
 
     routes.RegisterTodoRoutes(router, db)
 
+    log.Println("Server is running on port 8080")
     http.ListenAndServe(":8080", router)
 	
 	fmt.Printf("Failed to connect to DB %v", err)

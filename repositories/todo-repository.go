@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"time"
+	"todo-backend/errors"
 	"todo-backend/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,8 +35,14 @@ func (r *TodoRepository) GetAllRepo(pageNumber int, entriesPerPage int, sort str
 	options := options.Find()
 	options.SetSkip(int64(offset))
 	options.SetLimit(int64(entriesPerPage))
-	options.SetSort(bson.D{{Key: "created_at", Value: sort}})
-
+	if sort=="ASC"{
+		options.SetSort(bson.D{{Key: "created_at", Value: 1}})
+	}else if sort=="DESC"{
+		options.SetSort(bson.D{{Key: "created_at", Value: -1}})
+	}else{
+		return nil, errors.ErrInvalidSorting
+	}
+	
 	cursor, err := r.collection.Find(context.TODO(), bson.D{}, options)
 	if err != nil {
 		return nil, err

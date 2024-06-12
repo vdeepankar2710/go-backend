@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"todo-backend/dtos"
@@ -10,6 +11,11 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+type TodoResponse struct {
+    Message string      `json:"message"`
+    Todo    interface{} `json:"todo"`
+}
 
 func CreateTodoHandler(service *services.TodoService) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
@@ -22,7 +28,12 @@ func CreateTodoHandler(service *services.TodoService) http.HandlerFunc {
 		if err!=nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		json.NewEncoder(w).Encode(todo)
+		response := TodoResponse{
+            Message: "Todo created successfully",
+            Todo:    todo,
+        }
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -53,6 +64,7 @@ func GetAllTodosHandler(service *services.TodoService) http.HandlerFunc{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(todos)
 	}
 }
@@ -68,11 +80,17 @@ func GetTodoByIdhandler(service *services.TodoService) http.HandlerFunc{
 		}
 		todo, err := service.GetTodoByIDService(id)
 
+		fmt.Printf( "%+v\n",todo)
+
 		if err!=nil{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		json.NewEncoder(w).Encode(todo)
+		response := TodoResponse{
+            Message: "Todos retrieved successfully",
+            Todo:    todo,
+        }
+		json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -112,7 +130,12 @@ func UpdateTodoHandler(service *services.TodoService) http.HandlerFunc {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
-        json.NewEncoder(w).Encode(todo)
+		response := TodoResponse{
+            Message: "Todo updated successfully",
+            Todo:    todo,
+        }
+        w.WriteHeader(http.StatusNoContent)
+        json.NewEncoder(w).Encode(response)
     }
 }
 
@@ -129,7 +152,11 @@ func DeleteTodoHandler(service *services.TodoService) http.HandlerFunc {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
+		response := TodoResponse{
+            Message: "Todo deleted successfully",
+        }
         w.WriteHeader(http.StatusNoContent)
+		json.NewEncoder(w).Encode(response)
     }
 }
 
@@ -149,6 +176,10 @@ func GetTodosByUserIDHandler(service *services.TodoService) http.HandlerFunc{
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		json.NewEncoder(w).Encode(todos)
+		response := TodoResponse{
+            Message: "Todos retrieved successfully",
+			Todo: todos,
+        }
+		json.NewEncoder(w).Encode(response)
 	}
 }
